@@ -25,6 +25,13 @@ function checksExistsUserAccount(request, response, next) {
 app.post("/users", (request, response) => {
   const { name, username } = request.body;
 
+  const usernameAlreadyExists = users.some(
+    (user) => user.username === username
+  );
+  if (usernameAlreadyExists) {
+    return response.status(400).send({ error: "Username already exists!" });
+  }
+
   const user = { id: uuidv4(), name, username, todos: [] };
   users.push(user);
 
@@ -60,7 +67,9 @@ app.put("/todos/:id", checksExistsUserAccount, (request, response) => {
   const { id } = request.params;
 
   const todo = user.todos.find((todo) => todo.id === id);
-  if (!todo) return response.status(404).send();
+  if (!todo) {
+    return response.status(404).send({ error: "Task does not exists!" });
+  }
 
   const { title, deadline } = request.body;
   Object.assign(todo, { title, deadline });
@@ -73,7 +82,9 @@ app.patch("/todos/:id/done", checksExistsUserAccount, (request, response) => {
   const { id } = request.params;
 
   const todo = user.todos.find((todo) => todo.id === id);
-  if (!todo) return response.status(404).send();
+  if (!todo) {
+    return response.status(404).send({ error: "Task does not exists!" });
+  }
 
   todo.done = true;
 
@@ -81,7 +92,19 @@ app.patch("/todos/:id/done", checksExistsUserAccount, (request, response) => {
 });
 
 app.delete("/todos/:id", checksExistsUserAccount, (request, response) => {
-  // Complete aqui
+  const { user } = request;
+  const { id } = request.params;
+
+  const todo = user.todos.find((todo) => todo.id === id);
+  if (!todo) {
+    return response.status(404).send({ error: "Task does not exists!" });
+  }
+
+  const { todos } = user;
+  const indexTodo = todos.indexOf(todo);
+  todos.splice(indexTodo, 1);
+
+  return response.status(204).send();
 });
 
 module.exports = app;
