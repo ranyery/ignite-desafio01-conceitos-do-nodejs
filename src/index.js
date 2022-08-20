@@ -15,7 +15,7 @@ function checksExistsUserAccount(request, response, next) {
   if (!username) return response.status(400).send();
 
   const user = users.find((user) => user.username === username);
-  if (!user) return response.status(404).send();
+  if (!user) return response.status(404).send({ error: "User not found!" });
 
   request["user"] = user;
 
@@ -68,11 +68,11 @@ app.put("/todos/:id", checksExistsUserAccount, (request, response) => {
 
   const todo = user.todos.find((todo) => todo.id === id);
   if (!todo) {
-    return response.status(404).send({ error: "Task does not exists!" });
+    return response.status(404).send({ error: "Todo not found!" });
   }
 
   const { title, deadline } = request.body;
-  Object.assign(todo, { title, deadline });
+  Object.assign(todo, { title, deadline: new Date(deadline) });
 
   return response.status(200).send(todo);
 });
@@ -83,7 +83,7 @@ app.patch("/todos/:id/done", checksExistsUserAccount, (request, response) => {
 
   const todo = user.todos.find((todo) => todo.id === id);
   if (!todo) {
-    return response.status(404).send({ error: "Task does not exists!" });
+    return response.status(404).send({ error: "Todo not found!" });
   }
 
   todo.done = true;
@@ -95,14 +95,12 @@ app.delete("/todos/:id", checksExistsUserAccount, (request, response) => {
   const { user } = request;
   const { id } = request.params;
 
-  const todo = user.todos.find((todo) => todo.id === id);
-  if (!todo) {
-    return response.status(404).send({ error: "Task does not exists!" });
+  const indexTodo = user.todos.findIndex((todo) => todo.id === id);
+  if (indexTodo === -1) {
+    return response.status(404).send({ error: "Todo not found!" });
   }
 
-  const { todos } = user;
-  const indexTodo = todos.indexOf(todo);
-  todos.splice(indexTodo, 1);
+  user.todos.splice(indexTodo, 1);
 
   return response.status(204).send();
 });
